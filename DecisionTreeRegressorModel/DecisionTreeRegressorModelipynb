@@ -1,0 +1,519 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "447d33b3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#Imports\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from sklearn.tree import DecisionTreeRegressor\n",
+    "from sklearn.metrics import mean_squared_error\n",
+    "from sklearn.ensemble import RandomForestRegressor"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "54622cfb",
+   "metadata": {},
+   "source": [
+    "# Importing the data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "797c8de8",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "tripdata_df = pd.read_parquet(path = 'https://d37ci6vzurychx.cloudfront.net/trip-data/green_tripdata_2020-02.parquet', #provide the URL to the data source\n",
+    "                      engine = 'fastparquet')"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c50ec62f",
+   "metadata": {},
+   "source": [
+    "# Examining the data"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "f7c83139",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "There are 398632 rows and 20 columns.\n",
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 398632 entries, 0 to 398631\n",
+      "Data columns (total 20 columns):\n",
+      " #   Column                 Non-Null Count   Dtype         \n",
+      "---  ------                 --------------   -----         \n",
+      " 0   VendorID               398632 non-null  int64         \n",
+      " 1   lpep_pickup_datetime   398632 non-null  datetime64[ns]\n",
+      " 2   lpep_dropoff_datetime  398632 non-null  datetime64[ns]\n",
+      " 3   store_and_fwd_flag     317739 non-null  object        \n",
+      " 4   RatecodeID             317739 non-null  float64       \n",
+      " 5   PULocationID           398632 non-null  int64         \n",
+      " 6   DOLocationID           398632 non-null  int64         \n",
+      " 7   passenger_count        317739 non-null  float64       \n",
+      " 8   trip_distance          398632 non-null  float64       \n",
+      " 9   fare_amount            398632 non-null  float64       \n",
+      " 10  extra                  398632 non-null  float64       \n",
+      " 11  mta_tax                398632 non-null  float64       \n",
+      " 12  tip_amount             398632 non-null  float64       \n",
+      " 13  tolls_amount           398632 non-null  float64       \n",
+      " 14  ehail_fee              0 non-null       float64       \n",
+      " 15  improvement_surcharge  398632 non-null  float64       \n",
+      " 16  total_amount           398632 non-null  float64       \n",
+      " 17  payment_type           317739 non-null  float64       \n",
+      " 18  trip_type              317738 non-null  float64       \n",
+      " 19  congestion_surcharge   317739 non-null  float64       \n",
+      "dtypes: datetime64[ns](2), float64(14), int64(3), object(1)\n",
+      "memory usage: 60.8+ MB\n",
+      "None\n",
+      "   VendorID lpep_pickup_datetime lpep_dropoff_datetime store_and_fwd_flag  \\\n",
+      "0         2  2020-02-01 00:10:25   2020-02-01 00:14:34                  N   \n",
+      "1         2  2020-02-01 00:16:59   2020-02-01 00:21:35                  N   \n",
+      "2         2  2020-02-01 00:19:31   2020-02-01 00:25:29                  N   \n",
+      "3         2  2020-02-01 00:43:52   2020-02-01 00:48:58                  N   \n",
+      "4         2  2020-02-01 00:32:53   2020-02-01 00:35:19                  N   \n",
+      "\n",
+      "   RatecodeID  PULocationID  DOLocationID  passenger_count  trip_distance  \\\n",
+      "0         1.0            74            41              1.0           0.76   \n",
+      "1         1.0            74            74              1.0           0.72   \n",
+      "2         1.0           223             7              1.0           0.89   \n",
+      "3         1.0           145           145              1.0           1.12   \n",
+      "4         1.0           166           166              1.0           0.65   \n",
+      "\n",
+      "   fare_amount  extra  mta_tax  tip_amount  tolls_amount  ehail_fee  \\\n",
+      "0          4.5    0.5      0.5        0.00           0.0        NaN   \n",
+      "1          5.0    0.5      0.5        0.00           0.0        NaN   \n",
+      "2          6.0    0.5      0.5        1.82           0.0        NaN   \n",
+      "3          6.0    0.5      0.5        0.00           0.0        NaN   \n",
+      "4          4.0    0.5      0.5        1.06           0.0        NaN   \n",
+      "\n",
+      "   improvement_surcharge  total_amount  payment_type  trip_type  \\\n",
+      "0                    0.3          5.80           2.0        1.0   \n",
+      "1                    0.3          6.30           1.0        1.0   \n",
+      "2                    0.3          9.12           1.0        1.0   \n",
+      "3                    0.3          7.30           2.0        1.0   \n",
+      "4                    0.3          6.36           1.0        1.0   \n",
+      "\n",
+      "   congestion_surcharge  \n",
+      "0                   0.0  \n",
+      "1                   0.0  \n",
+      "2                   0.0  \n",
+      "3                   0.0  \n",
+      "4                   0.0  \n",
+      "VendorID                      0\n",
+      "lpep_pickup_datetime          0\n",
+      "lpep_dropoff_datetime         0\n",
+      "store_and_fwd_flag        80893\n",
+      "RatecodeID                80893\n",
+      "PULocationID                  0\n",
+      "DOLocationID                  0\n",
+      "passenger_count           80893\n",
+      "trip_distance                 0\n",
+      "fare_amount                   0\n",
+      "extra                         0\n",
+      "mta_tax                       0\n",
+      "tip_amount                    0\n",
+      "tolls_amount                  0\n",
+      "ehail_fee                398632\n",
+      "improvement_surcharge         0\n",
+      "total_amount                  0\n",
+      "payment_type              80893\n",
+      "trip_type                 80894\n",
+      "congestion_surcharge      80893\n",
+      "dtype: int64\n",
+      "398631    7\n",
+      "344706    7\n",
+      "344699    7\n",
+      "344700    7\n",
+      "344701    7\n",
+      "         ..\n",
+      "132875    1\n",
+      "132874    1\n",
+      "132873    1\n",
+      "132872    1\n",
+      "199316    1\n",
+      "Length: 398632, dtype: int64\n"
+     ]
+    }
+   ],
+   "source": [
+    "#1 Identifying its dimensions\n",
+    "print('There are {} rows and {} columns.'.format(tripdata_df.shape[0], tripdata_df.shape[1])) \n",
+    "print(tripdata_df.info())\n",
+    "# Indicating if the variables have suitable types\n",
+    "print(tripdata_df.head())\n",
+    "print(tripdata_df.isnull().sum())\n",
+    "print(tripdata_df.isnull().sum(axis=1).sort_values(ascending = False))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "11bde38c",
+   "metadata": {},
+   "source": [
+    "# Much of the data is missing, so it is a WIDESPREAD issue as opposed to an isolated case. There are at most 7 variables with missing data. Considering there are 20 columns, we could have rows missing +35% of data. We should delete these rows, since they are not very useful to us. We can perform imputation on the rows that have less than 35% missing data for replacement purposes. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "cebb9207",
+   "metadata": {},
+   "source": [
+    "# Data Preparation"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "e2ac1555",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "N       316829\n",
+      "None     80893\n",
+      "Y          910\n",
+      "Name: store_and_fwd_flag, dtype: int64\n",
+      "1.0     309477\n",
+      "NaN      80893\n",
+      "5.0       7246\n",
+      "2.0        620\n",
+      "4.0        263\n",
+      "3.0        130\n",
+      "99.0         2\n",
+      "6.0          1\n",
+      "Name: RatecodeID, dtype: int64\n",
+      "1.0    273447\n",
+      "NaN     80893\n",
+      "2.0     23121\n",
+      "5.0      9178\n",
+      "3.0      4927\n",
+      "6.0      4809\n",
+      "4.0      1775\n",
+      "0.0       465\n",
+      "7.0         9\n",
+      "8.0         8\n",
+      "Name: passenger_count, dtype: int64\n",
+      "1.0    176530\n",
+      "2.0    138849\n",
+      "NaN     80893\n",
+      "3.0      1767\n",
+      "4.0       579\n",
+      "5.0        14\n",
+      "Name: payment_type, dtype: int64\n",
+      "1.0    310466\n",
+      "NaN     80894\n",
+      "2.0      7272\n",
+      "Name: trip_type, dtype: int64\n",
+      "0.00    263467\n",
+      "NaN      80893\n",
+      "2.75     54205\n",
+      "2.50        66\n",
+      "0.75         1\n",
+      "Name: congestion_surcharge, dtype: int64\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Step 1: Imputation: For all missing data that is less than or equal to 35% of the data, we will perform imputation\n",
+    "\n",
+    "print(tripdata_df['store_and_fwd_flag'].value_counts(dropna=False))\n",
+    "tripdata_df.loc[tripdata_df['store_and_fwd_flag'].isna(), 'store_and_fwd_flag'] = 'N'\n",
+    "\n",
+    "print(tripdata_df['RatecodeID'].value_counts(dropna=False))\n",
+    "tripdata_df.loc[tripdata_df['RatecodeID'].isna(), 'RatecodeID'] = '1.0'\n",
+    "\n",
+    "print(tripdata_df['passenger_count'].value_counts(dropna=False))\n",
+    "tripdata_df.loc[tripdata_df['passenger_count'].isna(), 'passenger_count'] = '1.0'\n",
+    "\n",
+    "print(tripdata_df['payment_type'].value_counts(dropna=False))\n",
+    "tripdata_df.loc[tripdata_df['payment_type'].isna(), 'payment_type'] = '1.0'\n",
+    "\n",
+    "print(tripdata_df['trip_type'].value_counts(dropna=False))\n",
+    "tripdata_df.loc[tripdata_df['trip_type'].isna(), 'trip_type'] = '1.0'\n",
+    "\n",
+    "print(tripdata_df['congestion_surcharge'].value_counts(dropna=False))\n",
+    "tripdata_df.loc[tripdata_df['congestion_surcharge'].isna(), 'congestion_surcharge'] = '0.00'\n",
+    "\n",
+    "\n",
+    "# Step 2: Converting Fields to a Suitable Data Type\n",
+    "tripdata_df['passenger_count'] = tripdata_df['passenger_count'].astype(float)\n",
+    "tripdata_df['RatecodeID'] = tripdata_df['RatecodeID'].astype(float)\n",
+    "tripdata_df['payment_type'] = tripdata_df['payment_type'].astype(float)\n",
+    "tripdata_df['trip_type'] = tripdata_df['trip_type'].astype(float)\n",
+    "\n",
+    "#Step 3: Removing any duplicate rows\n",
+    "tripdata_df.drop_duplicates(inplace=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "af87c6ff",
+   "metadata": {},
+   "source": [
+    "# Partitioning the data into train/test split."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "08e54a97",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "X = tripdata_df[['passenger_count', 'trip_type', 'trip_distance', 'tolls_amount', 'fare_amount']]\n",
+    "y = tripdata_df['tip_amount']\n",
+    "\n",
+    "X_train, X_test, y_train, y_test = train_test_split( \n",
+    "                                        X, y, test_size = 0.3, random_state = 5\n",
+    "                                        ) "
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "723f2c14",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Above, I partitioned the data into X and Y. X is made up of columns that are relevant in predicting the\n",
+    "# variable in our Y, which is tip amount. Therefore, passenger_count, trip_type, etc. could all help us predict\n",
+    "# a tip. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "c73490d3",
+   "metadata": {},
+   "source": [
+    "# For my features, I selected passenger_count, trip_type, trip_distance, tolls_amount, and fare_amount. These will all help us predict tip_amount. The categorical feature is trip_type. However, I have already encoded trip_type as an integer. \n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "a1f2c486",
+   "metadata": {},
+   "source": [
+    "# Decision Tree"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "7a246040",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "DecisionTreeRegressor(random_state=7)"
+      ]
+     },
+     "execution_count": 7,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "dt = DecisionTreeRegressor(random_state=7)\n",
+    "dt.fit(X_train, y_train)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "469abc4b",
+   "metadata": {},
+   "source": [
+    "# Above, I built the decision tree, and chose regression as the data is continuous. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "9d3ce706",
+   "metadata": {},
+   "source": [
+    "# MSE"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "dfbf602e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The predicted tip amount is: [0.60033784 0.         5.61       ... 1.72862069 0.91833333 2.5       ]\n",
+      "The mse of the model is: 4.558732520771284\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Predicting the labels for the test set\n",
+    "y_pred   = dt.predict(X_test)\n",
+    "\n",
+    "print('The predicted tip amount is: {}'.format(y_pred))\n",
+    "\n",
+    "mse = mean_squared_error(y_test, y_pred)\n",
+    "\n",
+    "# Evaluating the Predictions\n",
+    "print('The mse of the model is: {}'.format(mse))"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "11332d72",
+   "metadata": {},
+   "source": [
+    "# Because the MSE is about 4.6, the model could be improved, however it is still useful/effective for predicting the tip amount. Ideally, we would want an MSE as close to 0 as possible"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "86648191",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The mse of the model is with n_estimators = 10 is : 3.7023816488818784\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Here I am testing n_estimators=10 for the model to see how the mse is affected\n",
+    "rf = RandomForestRegressor(random_state=7, n_estimators= 10)\n",
+    "rf.fit(X_train, y_train)\n",
+    "y_pred   = rf.predict(X_test)\n",
+    "mse = mean_squared_error(y_test, y_pred)\n",
+    "\n",
+    "# Evaluating the predictions\n",
+    "print('The mse of the model is with n_estimators = 10 is : {}'.format(mse))\n",
+    "\n",
+    "\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "41d36abb",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "The mse of the model with n_estimators = 20 is: 3.510613008669843\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Here I am testing n_estimators= 20 for the model to see how the mse is affected\n",
+    "rf2 = RandomForestRegressor(random_state=7, n_estimators= 20)\n",
+    "rf2.fit(X_train, y_train)\n",
+    "y_pred   = rf2.predict(X_test)\n",
+    "mse = mean_squared_error(y_test, y_pred)\n",
+    "\n",
+    "# Evaluating the predictions\n",
+    "print('The mse of the model with n_estimators = 20 is: {}'.format(mse))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "5910bace",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Here I am testing n_estimators=50 for the model to see how the mse is affected\n",
+    "rf3 = RandomForestRegressor(random_state=7, n_estimators= 50)\n",
+    "rf3.fit(X_train, y_train)\n",
+    "y_pred   = rf3.predict(X_test)\n",
+    "mse = mean_squared_error(y_test, y_pred)\n",
+    "\n",
+    "# Evaluating the predictions\n",
+    "print('The mse of the model with n_estimators = 50 is: {}'.format(mse))\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "941dbbc7",
+   "metadata": {},
+   "source": [
+    "# I will use this tweaked version of the model. It has the highest n_estimators, and the mse is the closest to 0, so it is the most effective version. "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "1b0c0cc8",
+   "metadata": {},
+   "source": [
+    "# Predictions"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "4b547d93",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Here, I used the feature_importances_, which assigns a float to represent\n",
+    "# the importance of each feature in the random forest. \n",
+    "rf3.feature_importances_\n",
+    "#'Order of array: passenger_count', 'trip_type', 'trip_distance', 'tolls_amount', 'fare_amount'\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "f56bc33e",
+   "metadata": {},
+   "source": [
+    "# We see that trip_distance is the most important factor in influencing the tip_amount. After that, fare_amount also plays a large role. However, passenger_count, trip_type, and tolls_amount play a much lesser role in influencing the tip_amount. "
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.12"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
