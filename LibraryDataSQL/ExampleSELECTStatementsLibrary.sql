@@ -1,3 +1,4 @@
+use librarydb
 -- Which are  the longest books (in pages)? Return the book’s title  in the result. 
 -- Return all books with the maximum number of pages. 
 SELECT title FROM book WHERE page_count = (SELECT max(page_count) FROM book);
