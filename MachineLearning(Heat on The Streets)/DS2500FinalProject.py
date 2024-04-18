@@ -4,7 +4,7 @@
 Created on Apr  1 22:03:00 2024
 
 DS 2500 Final Project // Temperature’s Influence on Boston Neighborhood Crime Rates 
-// Julian Getsey, Jared Mar, and Andrew Chu
+// Julian Getsey
 """
 
 # Working with Data
